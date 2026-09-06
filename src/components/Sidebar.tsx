@@ -1,7 +1,7 @@
-import { Globe, MapPin, Search, Radio, CloudRain, Droplets, Navigation } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { Globe, MapPin, Search, Radio, CloudRain, Droplets, Navigation, Loader2, MapPinned } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
 import { languages, type LanguageKey, type UIText } from '../lib/translations'
-import { regionalDatabase, defaultLocation, fetchWeather, type WeatherData } from '../lib/locations'
+import { regionalDatabase, defaultLocation, fetchWeather, searchLocations, estimateDanger, type WeatherData, type SearchResult } from '../lib/locations'
 
 interface SidebarProps {
   langKey: LanguageKey
@@ -30,6 +30,14 @@ export default function Sidebar({
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lon: number } | null>(null)
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
 
+  const [liveSearchQuery, setLiveSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [searching, setSearching] = useState(false)
+  const [showResults, setShowResults] = useState(false)
+  const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null)
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const resultsRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     if (searchQuery.trim()) {
       const queryWords = searchQuery.toLowerCase().replace('-', ' ').split(' ').filter(Boolean)
@@ -44,18 +52,46 @@ export default function Sidebar({
   }, [searchQuery])
 
   useEffect(() => {
-    if (locationMode === 'search' && matchedLocations.length > 0) {
+    if (locationMode === 'search' && matchedLocations.length > 0 && !liveSearchQuery) {
       const loc = matchedLocations[0]
       setSelectedName(loc)
       setLat(regionalDatabase[loc].lat)
       setLon(regionalDatabase[loc].lon)
       setDangerMark(regionalDatabase[loc].danger)
     }
-  }, [matchedLocations, locationMode, setSelectedName, setLat, setLon, setDangerMark])
+  }, [matchedLocations, locationMode, setSelectedName, setLat, setLon, setDangerMark, liveSearchQuery])
 
   useEffect(() => {
     fetchWeather(lat, lon).then((w) => setWeather(w))
   }, [lat, lon, setWeather])
+
+  useEffect(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current)
+    if (!liveSearchQuery.trim() || liveSearchQuery.trim().length < 2) {
+      setSearchResults([])
+      setSearching(false)
+      return
+    }
+    setSearching(true)
+    searchTimer.current = setTimeout(async () => {
+      const results = await searchLocations(liveSearchQuery)
+      setSearchResults(results)
+      setSearching(false)
+    }, 500)
+    return () => {
+      if (searchTimer.current) clearTimeout(searchTimer.current)
+    }
+  }, [liveSearchQuery])
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (resultsRef.current && !resultsRef.current.contains(e.target as Node)) {
+        setShowResults(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const handleGPS = () => {
     setGpsStatus('loading')
@@ -69,10 +105,10 @@ export default function Sidebar({
       setGpsCoords({ lat: glat, lon: glon })
       setLat(glat)
       setLon(glon)
-      setDangerMark(5.0)
+      setDangerMark(estimateDanger(glat, glon))
       try {
         const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${glat}&lon=${glon}`
-        const res = await fetch(url, { headers: { 'User-Agent': 'FloodWarningApp/1.0' } })
+        const res = await fetch(url, { headers: { 'User-Agent': 'AapdaSevaFloodApp/1.0' } })
         const data = await res.json()
         const addr = data.address || {}
         const place = addr.city || addr.town || addr.village || addr.county || 'Live GPS Area'
@@ -85,6 +121,29 @@ export default function Sidebar({
     },
     () => setGpsStatus('error'),
     )
+  }
+
+  const handleSelectResult = (result: SearchResult) => {
+    setSelectedResult(result)
+    setSelectedName(result.displayName.split(',').slice(0, 3).join(','))
+    setLat(result.lat)
+    setLon(result.lon)
+    setDangerMark(estimateDanger(result.lat, result.lon))
+    setLiveSearchQuery(result.name)
+    setShowResults(false)
+  }
+
+  const clearLiveSearch = () => {
+    setLiveSearchQuery('')
+    setSearchResults([])
+    setSelectedResult(null)
+    const loc = matchedLocations[0]
+    if (loc) {
+      setSelectedName(loc)
+      setLat(regionalDatabase[loc].lat)
+      setLon(regionalDatabase[loc].lon)
+      setDangerMark(regionalDatabase[loc].danger)
+    }
   }
 
   return (
@@ -151,34 +210,86 @@ export default function Sidebar({
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <div className="relative" ref={resultsRef}>
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 z-10" />
               <input
                 type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t.searchPlaceholder}
-                className="w-full bg-slate-800 border border-slate-600 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+                value={liveSearchQuery}
+                onChange={(e) => {
+                  setLiveSearchQuery(e.target.value)
+                  setShowResults(true)
+                }}
+                onFocus={() => setShowResults(true)}
+                placeholder="Search any village, city, town..."
+                className="w-full bg-slate-800 border border-slate-600 rounded-lg pl-9 pr-9 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
               />
+              {liveSearchQuery && (
+                <button
+                  onClick={clearLiveSearch}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                >
+                  ✕
+                </button>
+              )}
+              {searching && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <Loader2 className="w-4 h-4 text-primary-400 animate-spin" />
+                </div>
+              )}
+
+              {showResults && (liveSearchQuery.trim().length >= 2) && (searchResults.length > 0 || !searching) && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-64 overflow-y-auto z-20">
+                  {searchResults.length === 0 && !searching ? (
+                    <div className="px-3 py-3 text-xs text-slate-500">No locations found. Try a different search.</div>
+                  ) : (
+                    searchResults.map((result, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleSelectResult(result)}
+                        className="w-full text-left px-3 py-2.5 hover:bg-slate-700 transition-colors border-b border-slate-700/30 last:border-0"
+                      >
+                        <div className="flex items-start gap-2">
+                          <MapPinned className="w-3.5 h-3.5 text-primary-400 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm text-slate-200 font-medium">{result.name}</p>
+                            <p className="text-xs text-slate-500 truncate">{result.displayName}</p>
+                            <span className="inline-block mt-0.5 text-[10px] bg-slate-700 text-slate-400 px-1.5 py-0.5 rounded-full capitalize">{result.type}</span>
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
-            <select
-              value={selectedName}
-              onChange={(e) => {
-                const loc = e.target.value
-                setSelectedName(loc)
-                setLat(regionalDatabase[loc].lat)
-                setLon(regionalDatabase[loc].lon)
-                setDangerMark(regionalDatabase[loc].danger)
-              }}
-              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
-            >
-              {matchedLocations.map((loc) => (
-                <option key={loc} value={loc}>{loc}</option>
-              ))}
-            </select>
-            {searchQuery.trim() && matchedLocations.length === 0 && (
-              <p className="text-xs text-warning-400">{t.noMatch}</p>
+
+            {selectedResult && (
+              <div className="bg-primary-900/20 border border-primary-700/30 rounded-lg p-2.5 text-xs text-primary-300 flex items-center gap-2 animate-fade-in">
+                <MapPinned className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>Live location selected: {selectedResult.name}</span>
+              </div>
             )}
+
+            <div>
+              <p className="text-xs text-slate-500 mb-1.5">Quick select high-risk zones:</p>
+              <select
+                value={selectedName}
+                onChange={(e) => {
+                  const loc = e.target.value
+                  setSelectedName(loc)
+                  setLat(regionalDatabase[loc].lat)
+                  setLon(regionalDatabase[loc].lon)
+                  setDangerMark(regionalDatabase[loc].danger)
+                  setLiveSearchQuery('')
+                  setSelectedResult(null)
+                }}
+                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+              >
+                {matchedLocations.map((loc) => (
+                  <option key={loc} value={loc}>{loc}</option>
+                ))}
+              </select>
+            </div>
           </div>
         )}
       </div>
@@ -198,7 +309,7 @@ export default function Sidebar({
         <div className="space-y-2">
           <div className="bg-slate-800/60 rounded-lg p-3">
             <p className="text-xs text-slate-500 mb-0.5">{t.targetLocation}</p>
-            <p className="text-sm font-medium text-slate-200 truncate">{selectedName}</p>
+            <p className="text-sm font-medium text-slate-200 line-clamp-2">{selectedName}</p>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-slate-800/60 rounded-lg p-3">

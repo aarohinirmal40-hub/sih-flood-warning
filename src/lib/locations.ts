@@ -42,3 +42,43 @@ export async function fetchWeather(lat: number, lon: number): Promise<WeatherDat
     return { rain: 10.0, humidity: 60.0, success: false }
   }
 }
+
+export interface SearchResult {
+  name: string
+  lat: number
+  lon: number
+  displayName: string
+  type: string
+}
+
+export async function searchLocations(query: string): Promise<SearchResult[]> {
+  if (!query.trim()) return []
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&countrycodes=in&limit=15&q=${encodeURIComponent(query)}`
+    const res = await fetch(url, { headers: { 'User-Agent': 'AapdaSevaFloodApp/1.0' } })
+    const data = await res.json()
+    if (!Array.isArray(data)) return []
+    return data.map((item: { lat: string; lon: string; display_name: string; type: string }) => ({
+      name: item.display_name.split(',')[0],
+      lat: parseFloat(item.lat),
+      lon: parseFloat(item.lon),
+      displayName: item.display_name,
+      type: item.type,
+    }))
+  } catch {
+    return []
+  }
+}
+
+export function estimateDanger(lat: number, lon: number): number {
+  const himalayanLat = lat > 28
+  const northEast = lon > 88 && lat > 24
+  const coastal = lat < 21
+  const gangaBasin = lat > 24 && lat < 28 && lon > 80 && lon < 88
+
+  if (himalayanLat) return 7.5
+  if (northEast) return 7.0
+  if (gangaBasin) return 6.0
+  if (coastal) return 5.5
+  return 4.5
+}
