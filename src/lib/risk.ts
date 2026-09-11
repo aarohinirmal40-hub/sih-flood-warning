@@ -10,34 +10,38 @@ export interface AlertInfo {
 }
 
 export function calculateRisk(rain: number, riverLevel: number, humidity: number): number {
-  return rain * 0.5 + riverLevel * 5.0 + humidity * 0.3
+  const rainScore = rain * 8.0
+  const riverScore = Math.max(0, (riverLevel - 4) * 6.0)
+  const humidityScore = humidity > 85 ? (humidity - 85) * 0.8 : 0
+  const raw = rainScore + riverScore + humidityScore
+  return Math.max(0, Math.min(100, Math.round(raw * 10) / 10))
 }
 
 export function getAlertInfo(riskScore: number, locationName: string): AlertInfo {
-  if (riskScore >= 75) {
+  if (riskScore >= 81) {
     return {
       level: 'red',
       title: `RED ALERT (${locationName.toUpperCase()}: EMERGENCY EVACUATION)`,
       bgColor: '#D32F2F',
-      actionMsg: `IMMEDIATE EVACUATION ORDER for ${locationName}! Real-time climate sensors indicate severe flood threat. Move to designated Relief Camps.`,
+      actionMsg: `Extreme flood risk in ${locationName}! Evacuate immediately to designated relief camps.`,
       markerColor: 'red',
       textColor: '#ffffff',
     }
-  } else if (riskScore >= 50) {
+  } else if (riskScore >= 61) {
     return {
       level: 'orange',
       title: `ORANGE ALERT (${locationName.toUpperCase()}: PREPARE TO EVACUATE)`,
       bgColor: '#EF6C00',
-      actionMsg: `HIGH ALERT in ${locationName}! Live weather monitoring shows rising water levels. Keep emergency kits ready.`,
+      actionMsg: `High risk in ${locationName}. Live weather shows heavy rainfall. Prepare to evacuate.`,
       markerColor: 'orange',
       textColor: '#ffffff',
     }
-  } else if (riskScore >= 30) {
+  } else if (riskScore >= 31) {
     return {
       level: 'yellow',
       title: `YELLOW ALERT (${locationName.toUpperCase()}: WATCH & MONITOR)`,
       bgColor: '#FBC02D',
-      actionMsg: `Weather conditions in ${locationName} are being tracked via automated climate feeds. Stay alert.`,
+      actionMsg: `Moderate risk in ${locationName}. Stay updated on weather conditions.`,
       markerColor: 'beige',
       textColor: '#1a1a1a',
     }
@@ -46,7 +50,7 @@ export function getAlertInfo(riskScore: number, locationName: string): AlertInfo
     level: 'green',
     title: `GREEN ALERT (${locationName.toUpperCase()}: SAFE CONDITIONS)`,
     bgColor: '#388E3C',
-    actionMsg: `Climate parameters in ${locationName} are normal. No immediate threat detected from live satellite feeds.`,
+    actionMsg: `Normal conditions in ${locationName}. No immediate threat detected from live weather feeds.`,
     markerColor: 'green',
     textColor: '#ffffff',
   }
