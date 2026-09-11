@@ -30,8 +30,14 @@ export interface UIText {
   targetLocation: string
   liveRainfall: string
   soilHumidity: string
+  liveTemp: string
+  feelsLike: string
+  windSpeed: string
+  weatherCondition: string
+  cloudCover: string
   apiSynced: string
   apiOffline: string
+  fetchingWeather: string
   clickGPS: string
   orSwitch: string
   noMatch: string
@@ -96,8 +102,14 @@ const en: UIText = {
   targetLocation: 'Target Location',
   liveRainfall: 'Actual Live Rainfall',
   soilHumidity: 'Actual Soil Humidity',
+  liveTemp: 'Current Temperature',
+  feelsLike: 'Feels Like',
+  windSpeed: 'Wind Speed',
+  weatherCondition: 'Weather Condition',
+  cloudCover: 'Cloud Cover',
   apiSynced: 'API Synced successfully!',
   apiOffline: 'API Offline - Using Default Climate Data',
+  fetchingWeather: 'Fetching live weather...',
   clickGPS: "Click below to fetch your current GPS coordinates:",
   orSwitch: "Click 'Get Location' above, or switch to Smart Search.",
   noMatch: 'No keyword match found. Showing default nearest hub.',
@@ -170,8 +182,14 @@ const hi: UIText = {
   targetLocation: 'लक्ष्य स्थान',
   liveRainfall: 'वास्तविक लाइव वर्षा',
   soilHumidity: 'वास्तविक मिट्टी नमी',
+  liveTemp: 'वर्तमान तापमान',
+  feelsLike: 'महसूस होता',
+  windSpeed: 'हवा की गति',
+  weatherCondition: 'मौसम स्थिति',
+  cloudCover: 'बादल आवरण',
   apiSynced: 'API सफलतापूर्वक सिंक हो गया!',
   apiOffline: 'API ऑफ़लाइन - डिफ़ॉल्ट जलवायु डेटा का उपयोग',
+  fetchingWeather: 'लाइव मौसम लाया जा रहा है...',
   clickGPS: 'अपने वर्तमान GPS निर्देशांक प्राप्त करने के लिए नीचे क्लिक करें:',
   orSwitch: "ऊपर 'स्थान प्राप्त करें' पर क्लिक करें, या स्मार्ट खोज पर स्विच करें।",
   noMatch: 'कोई कीवर्ड मैच नहीं मिला। डिफ़ॉल्ट निकटतम हब दिखाया जा रहा है।',

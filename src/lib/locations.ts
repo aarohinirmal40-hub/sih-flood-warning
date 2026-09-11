@@ -27,19 +27,74 @@ export const defaultLocation = {
 export interface WeatherData {
   rain: number
   humidity: number
+  temperature: number
+  windSpeed: number
+  weatherCode: number
+  weatherDesc: string
+  feelsLike: number
+  cloudCover: number
   success: boolean
+}
+
+const WEATHER_CODES: Record<number, string> = {
+  0: 'Clear sky',
+  1: 'Mainly clear',
+  2: 'Partly cloudy',
+  3: 'Overcast',
+  45: 'Fog',
+  48: 'Depositing rime fog',
+  51: 'Light drizzle',
+  53: 'Moderate drizzle',
+  55: 'Dense drizzle',
+  56: 'Light freezing drizzle',
+  57: 'Dense freezing drizzle',
+  61: 'Slight rain',
+  63: 'Moderate rain',
+  65: 'Heavy rain',
+  66: 'Light freezing rain',
+  67: 'Heavy freezing rain',
+  71: 'Slight snow',
+  73: 'Moderate snow',
+  75: 'Heavy snow',
+  77: 'Snow grains',
+  80: 'Slight rain showers',
+  81: 'Moderate rain showers',
+  82: 'Violent rain showers',
+  85: 'Slight snow showers',
+  86: 'Heavy snow showers',
+  95: 'Thunderstorm',
+  96: 'Thunderstorm with slight hail',
+  99: 'Thunderstorm with heavy hail',
+}
+
+export function getWeatherDesc(code: number): string {
+  return WEATHER_CODES[code] ?? 'Unknown'
 }
 
 export async function fetchWeather(lat: number, lon: number): Promise<WeatherData> {
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=precipitation,rain,relative_humidity_2m`
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,precipitation,rain,weather_code,wind_speed_10m,cloud_cover,apparent_temperature`
     const res = await fetch(url)
     const data = await res.json()
-    const rain = parseFloat(data.current?.rain ?? '0') || 0
-    const humidity = parseFloat(data.current?.relative_humidity_2m ?? '50') || 50
-    return { rain, humidity, success: true }
+    const cur = data.current ?? {}
+    const rain = parseFloat(cur.rain ?? cur.precipitation ?? '0') || 0
+    const humidity = parseFloat(cur.relative_humidity_2m ?? '50') || 50
+    const temperature = parseFloat(cur.temperature_2m ?? '25') || 25
+    const windSpeed = parseFloat(cur.wind_speed_10m ?? '0') || 0
+    const weatherCode = parseInt(cur.weather_code ?? '0') || 0
+    const feelsLike = parseFloat(cur.apparent_temperature ?? cur.temperature_2m ?? '25') || 25
+    const cloudCover = parseFloat(cur.cloud_cover ?? '0') || 0
+    return {
+      rain, humidity, temperature, windSpeed, weatherCode,
+      weatherDesc: getWeatherDesc(weatherCode),
+      feelsLike, cloudCover, success: true,
+    }
   } catch {
-    return { rain: 10.0, humidity: 60.0, success: false }
+    return {
+      rain: 10.0, humidity: 60.0, temperature: 28.0, windSpeed: 5.0,
+      weatherCode: 63, weatherDesc: 'Moderate rain', feelsLike: 30.0,
+      cloudCover: 75, success: false,
+    }
   }
 }
 

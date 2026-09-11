@@ -19,7 +19,7 @@ export default function App() {
   const [lat, setLat] = useState(defaultLocation.lat)
   const [lon, setLon] = useState(defaultLocation.lon)
   const [dangerMark, setDangerMark] = useState(defaultLocation.danger)
-  const [weather, setWeather] = useState<WeatherData>({ rain: 10, humidity: 60, success: false })
+  const [weather, setWeather] = useState<WeatherData>({ rain: 10, humidity: 60, temperature: 28, windSpeed: 5, weatherCode: 63, weatherDesc: 'Moderate rain', feelsLike: 30, cloudCover: 75, success: false })
   const [activeTab, setActiveTab] = useState(0)
   const [broadcastLog, setBroadcastLog] = useState<string[]>([])
 

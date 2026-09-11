@@ -1,6 +1,6 @@
 import { MapContainer, TileLayer, CircleMarker, Marker, Polyline, Popup } from 'react-leaflet'
 import L from 'leaflet'
-import { AlertTriangle, Download, Home, Phone, CloudRain, Waves, ShieldAlert, Volume2, MessageSquare } from 'lucide-react'
+import { AlertTriangle, Download, Home, Phone, CloudRain, Waves, ShieldAlert, Volume2, MessageSquare, Thermometer, Wind, Cloud, Eye, Droplets } from 'lucide-react'
 import { useState } from 'react'
 import { type UIText } from '../lib/translations'
 import { type AlertInfo } from '../lib/risk'
@@ -11,7 +11,7 @@ interface DashboardProps {
   selectedName: string
   lat: number
   lon: number
-  weather: { rain: number; humidity: number; success: boolean }
+  weather: { rain: number; humidity: number; temperature: number; windSpeed: number; weatherCode: number; weatherDesc: string; feelsLike: number; cloudCover: number; success: boolean }
   riverLevel: number
   dangerMark: number
   riskScore: number
@@ -75,6 +75,14 @@ export default function Dashboard({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="bg-slate-800/60 backdrop-blur rounded-xl p-4 border border-slate-700/50">
           <div className="flex items-center gap-2 mb-1">
+            <Thermometer className="w-4 h-4 text-primary-400" />
+            <span className="text-xs text-slate-400">{t.liveTemp}</span>
+          </div>
+          <p className="text-2xl font-bold text-slate-100">{weather.temperature.toFixed(1)}<span className="text-sm font-normal text-slate-500">°C</span></p>
+          <p className="text-xs text-slate-500 mt-0.5">{t.feelsLike}: {weather.feelsLike.toFixed(1)}°C</p>
+        </div>
+        <div className="bg-slate-800/60 backdrop-blur rounded-xl p-4 border border-slate-700/50">
+          <div className="flex items-center gap-2 mb-1">
             <CloudRain className="w-4 h-4 text-primary-400" />
             <span className="text-xs text-slate-400">{t.liveRain}</span>
           </div>
@@ -96,6 +104,30 @@ export default function Dashboard({
             <span className="text-xs text-slate-400">{t.riskIndex}</span>
           </div>
           <p className="text-2xl font-bold text-slate-100">{riskScore.toFixed(0)} <span className="text-sm font-normal text-slate-500">/ 100</span></p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-slate-800/60 backdrop-blur rounded-xl p-4 border border-slate-700/50">
+          <div className="flex items-center gap-2 mb-1">
+            <Cloud className="w-4 h-4 text-primary-400" />
+            <span className="text-xs text-slate-400">{t.weatherCondition}</span>
+          </div>
+          <p className="text-lg font-bold text-slate-100">{weather.weatherDesc}</p>
+        </div>
+        <div className="bg-slate-800/60 backdrop-blur rounded-xl p-4 border border-slate-700/50">
+          <div className="flex items-center gap-2 mb-1">
+            <Droplets className="w-4 h-4 text-primary-400" />
+            <span className="text-xs text-slate-400">{t.soilHumidity}</span>
+          </div>
+          <p className="text-2xl font-bold text-slate-100">{weather.humidity.toFixed(0)}<span className="text-sm font-normal text-slate-500">%</span></p>
+        </div>
+        <div className="bg-slate-800/60 backdrop-blur rounded-xl p-4 border border-slate-700/50">
+          <div className="flex items-center gap-2 mb-1">
+            <Wind className="w-4 h-4 text-primary-400" />
+            <span className="text-xs text-slate-400">{t.windSpeed}</span>
+          </div>
+          <p className="text-2xl font-bold text-slate-100">{weather.windSpeed.toFixed(1)} <span className="text-sm font-normal text-slate-500">km/h</span></p>
         </div>
         <div className="bg-slate-800/60 backdrop-blur rounded-xl p-4 border border-slate-700/50">
           <div className="flex items-center gap-2 mb-1">

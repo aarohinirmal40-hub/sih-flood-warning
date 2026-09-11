@@ -1,4 +1,4 @@
-import { Globe, MapPin, Search, Radio, CloudRain, Droplets, Navigation, Loader2, MapPinned } from 'lucide-react'
+import { Globe, MapPin, Search, Radio, CloudRain, Droplets, Navigation, Loader2, MapPinned, Thermometer, Wind, Cloud, Eye } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { languages, type LanguageKey, type UIText } from '../lib/translations'
 import { regionalDatabase, defaultLocation, fetchWeather, searchLocations, estimateDanger, type WeatherData, type SearchResult } from '../lib/locations'
@@ -29,6 +29,7 @@ export default function Sidebar({
   const [matchedLocations, setMatchedLocations] = useState<string[]>(Object.keys(regionalDatabase))
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lon: number } | null>(null)
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [weatherLoading, setWeatherLoading] = useState(false)
 
   const [liveSearchQuery, setLiveSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
@@ -62,7 +63,11 @@ export default function Sidebar({
   }, [matchedLocations, locationMode, setSelectedName, setLat, setLon, setDangerMark, liveSearchQuery])
 
   useEffect(() => {
-    fetchWeather(lat, lon).then((w) => setWeather(w))
+    setWeatherLoading(true)
+    fetchWeather(lat, lon).then((w) => {
+      setWeather(w)
+      setWeatherLoading(false)
+    })
   }, [lat, lon, setWeather])
 
   useEffect(() => {
@@ -299,19 +304,41 @@ export default function Sidebar({
           <Radio className={`w-5 h-5 ${weather.success ? 'text-success-400' : 'text-warning-400'}`} />
           <h2 className="text-sm font-semibold text-slate-200">{t.liveClimate}</h2>
         </div>
-        <div className={`flex items-center gap-1.5 text-xs mb-3 ${weather.success ? 'text-success-400' : 'text-warning-400'}`}>
-          {weather.success ? (
-            <><span className="w-2 h-2 rounded-full bg-success-400 animate-pulse" /> {t.apiSynced}</>
-          ) : (
-            <><span className="w-2 h-2 rounded-full bg-warning-400" /> {t.apiOffline}</>
-          )}
-        </div>
+        {weatherLoading ? (
+          <div className="flex items-center gap-2 text-xs text-primary-400 mb-3">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            {t.fetchingWeather}
+          </div>
+        ) : (
+          <div className={`flex items-center gap-1.5 text-xs mb-3 ${weather.success ? 'text-success-400' : 'text-warning-400'}`}>
+            {weather.success ? (
+              <><span className="w-2 h-2 rounded-full bg-success-400 animate-pulse" /> {t.apiSynced}</>
+            ) : (
+              <><span className="w-2 h-2 rounded-full bg-warning-400" /> {t.apiOffline}</>
+            )}
+          </div>
+        )}
         <div className="space-y-2">
           <div className="bg-slate-800/60 rounded-lg p-3">
             <p className="text-xs text-slate-500 mb-0.5">{t.targetLocation}</p>
             <p className="text-sm font-medium text-slate-200 line-clamp-2">{selectedName}</p>
           </div>
+          <div className="bg-slate-800/60 rounded-lg p-3">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Cloud className="w-3.5 h-3.5 text-primary-400" />
+              <span className="text-xs text-slate-500">{t.weatherCondition}</span>
+            </div>
+            <p className="text-sm font-bold text-slate-100">{weather.weatherDesc}</p>
+          </div>
           <div className="grid grid-cols-2 gap-2">
+            <div className="bg-slate-800/60 rounded-lg p-3">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Thermometer className="w-3.5 h-3.5 text-primary-400" />
+                <span className="text-xs text-slate-500">{t.liveTemp}</span>
+              </div>
+              <p className="text-lg font-bold text-slate-100">{weather.temperature.toFixed(1)}<span className="text-xs font-normal text-slate-500">°C</span></p>
+              <p className="text-xs text-slate-500 mt-0.5">{t.feelsLike}: {weather.feelsLike.toFixed(1)}°C</p>
+            </div>
             <div className="bg-slate-800/60 rounded-lg p-3">
               <div className="flex items-center gap-1.5 mb-1">
                 <CloudRain className="w-3.5 h-3.5 text-primary-400" />
@@ -319,12 +346,33 @@ export default function Sidebar({
               </div>
               <p className="text-lg font-bold text-slate-100">{weather.rain.toFixed(1)} <span className="text-xs font-normal text-slate-500">mm/hr</span></p>
             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
             <div className="bg-slate-800/60 rounded-lg p-3">
               <div className="flex items-center gap-1.5 mb-1">
                 <Droplets className="w-3.5 h-3.5 text-primary-400" />
                 <span className="text-xs text-slate-500">{t.soilHumidity}</span>
               </div>
               <p className="text-lg font-bold text-slate-100">{weather.humidity.toFixed(0)}<span className="text-xs font-normal text-slate-500">%</span></p>
+            </div>
+            <div className="bg-slate-800/60 rounded-lg p-3">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Wind className="w-3.5 h-3.5 text-primary-400" />
+                <span className="text-xs text-slate-500">{t.windSpeed}</span>
+              </div>
+              <p className="text-lg font-bold text-slate-100">{weather.windSpeed.toFixed(1)} <span className="text-xs font-normal text-slate-500">km/h</span></p>
+            </div>
+          </div>
+          <div className="bg-slate-800/60 rounded-lg p-3">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Eye className="w-3.5 h-3.5 text-primary-400" />
+              <span className="text-xs text-slate-500">{t.cloudCover}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 bg-slate-700 rounded-full h-2 overflow-hidden">
+                <div className="h-full bg-primary-500 rounded-full transition-all duration-500" style={{ width: `${weather.cloudCover}%` }} />
+              </div>
+              <span className="text-sm font-bold text-slate-100">{weather.cloudCover.toFixed(0)}%</span>
             </div>
           </div>
         </div>
