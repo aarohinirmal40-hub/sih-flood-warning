@@ -9,11 +9,57 @@ export interface AlertInfo {
   textColor: string
 }
 
-export function calculateRisk(rain: number, riverLevel: number, humidity: number): number {
-  const rainScore = rain * 8.0
-  const riverScore = Math.max(0, (riverLevel - 4) * 6.0)
-  const humidityScore = humidity > 85 ? (humidity - 85) * 0.8 : 0
-  const raw = rainScore + riverScore + humidityScore
+export function calculateRisk(
+  rain: number,
+  riverLevel: number,
+  humidity: number,
+  dangerMark: number = 0,
+): number {
+  // Soil Humidity: up to 35 points. Saturated ground (>85%) is flood-prone.
+  let humidityScore: number
+  if (humidity <= 40) {
+    humidityScore = (humidity / 40) * 5
+  } else if (humidity <= 70) {
+    humidityScore = 5 + ((humidity - 40) / 30) * 10
+  } else if (humidity <= 85) {
+    humidityScore = 15 + ((humidity - 70) / 15) * 10
+  } else {
+    humidityScore = 25 + ((humidity - 85) / 15) * 10
+  }
+  humidityScore = Math.min(35, humidityScore)
+
+  // Live Rainfall: up to 45 points. 0mm=0, 5mm=20, >15mm=45 (exponential curve).
+  let rainScore: number
+  if (rain <= 0) {
+    rainScore = 0
+  } else if (rain <= 5) {
+    rainScore = (rain / 5) * 20
+  } else if (rain <= 15) {
+    rainScore = 20 + ((rain - 5) / 10) * 20
+  } else {
+    rainScore = 40 + Math.min(5, (rain - 15) * 0.5)
+  }
+  rainScore = Math.min(45, rainScore)
+
+  // River Level vs Danger Mark: up to 20 points.
+  let riverScore: number
+  if (dangerMark > 0) {
+    const ratio = riverLevel / dangerMark
+    if (ratio <= 0.5) {
+      riverScore = ratio * 4
+    } else if (ratio <= 0.8) {
+      riverScore = 2 + ((ratio - 0.5) / 0.3) * 8
+    } else if (ratio <= 1.0) {
+      riverScore = 10 + ((ratio - 0.8) / 0.2) * 8
+    } else {
+      riverScore = 18 + Math.min(2, (ratio - 1.0) * 2)
+    }
+  } else {
+    riverScore = Math.max(0, (riverLevel - 4) * 3)
+  }
+  riverScore = Math.min(20, riverScore)
+
+  const raw = humidityScore + rainScore + riverScore
   return Math.max(0, Math.min(100, Math.round(raw * 10) / 10))
 }
 

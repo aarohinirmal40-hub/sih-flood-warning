@@ -31,8 +31,8 @@ export default function App() {
   )
 
   const riskScore = useMemo(
-    () => calculateRisk(weather.rain, riverLevel, weather.humidity),
-    [weather, riverLevel],
+    () => calculateRisk(weather.rain, riverLevel, weather.humidity, dangerMark),
+    [weather, riverLevel, dangerMark],
   )
 
   const alert = useMemo(
