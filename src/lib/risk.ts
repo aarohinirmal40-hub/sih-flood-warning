@@ -1,11 +1,11 @@
-export type AlertLevel = 'red' | 'orange' | 'yellow' | 'green'
+export type AlertLevel = 'red' | 'orange' | 'yellow' | 'green' | 'insufficient'
 
 export interface AlertInfo {
   level: AlertLevel
   title: string
   bgColor: string
   actionMsg: string
-  markerColor: 'red' | 'orange' | 'beige' | 'green'
+  markerColor: 'red' | 'orange' | 'beige' | 'green' | 'gray'
   textColor: string
 }
 
@@ -45,7 +45,17 @@ export function calculateRisk(
   return Math.min(100, Math.max(0, Math.round(score)))
 }
 
-export function getAlertInfo(riskScore: number, locationName: string): AlertInfo {
+export function getAlertInfo(riskScore: number | null, locationName: string): AlertInfo {
+  if (riskScore === null) {
+    return {
+      level: 'insufficient',
+      title: `DATA INSUFFICIENT (${locationName.toUpperCase()}: UNABLE TO ASSESS RISK)`,
+      bgColor: '#455A64',
+      actionMsg: `Live weather data for ${locationName} is currently unavailable. Risk status cannot be determined. Please retry or check alternative sources.`,
+      markerColor: 'gray',
+      textColor: '#ffffff',
+    }
+  }
   if (riskScore >= 81) {
     return {
       level: 'red',
@@ -86,7 +96,7 @@ export function getAlertInfo(riskScore: number, locationName: string): AlertInfo
 
 export function generateSitRep(
   locationName: string,
-  riskScore: number,
+  riskScore: number | null,
   alertTitle: string,
   rain: number,
   riverLevel: number,
@@ -95,13 +105,14 @@ export function generateSitRep(
   actionMsg: string,
 ): string {
   const now = new Date().toISOString().replace('T', ' ').substring(0, 19)
+  const scoreText = riskScore === null ? 'N/A (Data Insufficient)' : `${riskScore.toFixed(0)} / 100`
   return `==================================================
 NATIONAL DISASTER MANAGEMENT AUTHORITY (NDMA)
 AUTOMATED SITUATION REPORT (SITREP) - SIH 2026
 ==================================================
 Timestamp       : ${now}
 Target Location : ${locationName}
-Risk Index Score: ${riskScore.toFixed(0)} / 100
+Risk Index Score: ${scoreText}
 Current Status  : ${alertTitle}
 --------------------------------------------------
 METEOROLOGICAL TELEMETRY DATA:

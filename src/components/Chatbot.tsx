@@ -5,10 +5,10 @@ import { type UIText } from '../lib/translations'
 interface ChatbotProps {
   t: UIText
   selectedName: string
-  riskScore: number
+  riskScore: number | null
   actionMsg: string
-  rain: number
-  riverLevel: number
+  rain: number | null
+  riverLevel: number | null
 }
 
 interface ChatMessage {
@@ -26,12 +26,17 @@ export default function Chatbot({ t, selectedName, riskScore, actionMsg, rain, r
       return `Nearest operational relief camps are Govt Primary School (1.2 km) and Panchayat Bhawan (2.5 km). Follow the green safe transit corridor on the map.`
     }
     if (q.match(/safe|danger|risk|status|condition|flood/)) {
+      if (riskScore === null) {
+        return `Live weather data for ${selectedName} is currently unavailable. Risk status cannot be determined at this time. Please try again later.`
+      }
       return `Current risk score for ${selectedName} is ${riskScore.toFixed(0)}/100. ${actionMsg}`
     }
     if (q.match(/helpline|number|call|contact|ndrf|police|ambulance/)) {
       return `Emergency Helpline Directory: District Control Room: 1077, NDRF Command: 011-24363260, SDRF & Flood Helpline: 108.`
     }
-    return `Based on live telemetry for ${selectedName}, current rainfall is ${rain.toFixed(1)} mm/hr and water elevation is ${riverLevel}m. Audio siren broadcast nodes are fully synchronized.`
+    const rainText = rain !== null ? `${rain.toFixed(1)} mm/hr` : 'unavailable'
+    const riverText = riverLevel !== null ? `${riverLevel}m` : 'unavailable'
+    return `Based on live telemetry for ${selectedName}, current rainfall is ${rainText} and water elevation is ${riverText}. Audio siren broadcast nodes are fully synchronized.`
   }
 
   const handleSend = () => {

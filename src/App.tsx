@@ -11,6 +11,11 @@ import { type LanguageKey, getUIText, translateAlert } from './lib/translations'
 import { defaultLocation, type WeatherData } from './lib/locations'
 import { calculateRisk, getAlertInfo } from './lib/risk'
 
+const nullWeather: WeatherData = {
+  rain: null, humidity: null, temperature: null, windSpeed: null,
+  weatherCode: null, weatherDesc: 'Unknown', feelsLike: null, cloudCover: null, success: false,
+}
+
 const tabIcons = [AlertTriangle, TrendingUp, Bot, Camera, Radio, Satellite]
 
 export default function App() {
@@ -19,19 +24,22 @@ export default function App() {
   const [lat, setLat] = useState(defaultLocation.lat)
   const [lon, setLon] = useState(defaultLocation.lon)
   const [dangerMark, setDangerMark] = useState(defaultLocation.danger)
-  const [weather, setWeather] = useState<WeatherData>({ rain: 10, humidity: 60, temperature: 28, windSpeed: 5, weatherCode: 63, weatherDesc: 'Moderate rain', feelsLike: 30, cloudCover: 75, success: false })
+  const [weather, setWeather] = useState<WeatherData>(nullWeather)
   const [activeTab, setActiveTab] = useState(0)
   const [broadcastLog, setBroadcastLog] = useState<string[]>([])
 
   const t = useMemo(() => getUIText(langKey), [langKey])
 
   const riverLevel = useMemo(
-    () => Math.round((dangerMark + weather.rain * 0.05) * 100) / 100,
+    () => weather.rain !== null ? Math.round((dangerMark + weather.rain * 0.05) * 100) / 100 : null,
     [dangerMark, weather.rain],
   )
 
   const riskScore = useMemo(
-    () => calculateRisk(weather.rain, riverLevel, weather.humidity, dangerMark),
+    () => {
+      if (weather.rain === null || weather.humidity === null || riverLevel === null) return null
+      return calculateRisk(weather.rain, riverLevel, weather.humidity, dangerMark)
+    },
     [weather, riverLevel, dangerMark],
   )
 
@@ -41,7 +49,7 @@ export default function App() {
   )
 
   useEffect(() => {
-    if (riskScore >= 50) {
+    if (riskScore !== null && riskScore >= 50) {
       const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19)
       const localizedText = translateAlert(selectedName, langKey)
       const logEntry = `[${timestamp}] SMS/WhatsApp Broadcast | Lang: ${langKey} | Location: ${selectedName} | Risk: ${riskScore.toFixed(0)}/100 | Text: ${localizedText}`

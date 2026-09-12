@@ -25,14 +25,14 @@ export const defaultLocation = {
 }
 
 export interface WeatherData {
-  rain: number
-  humidity: number
-  temperature: number
-  windSpeed: number
-  weatherCode: number
+  rain: number | null
+  humidity: number | null
+  temperature: number | null
+  windSpeed: number | null
+  weatherCode: number | null
   weatherDesc: string
-  feelsLike: number
-  cloudCover: number
+  feelsLike: number | null
+  cloudCover: number | null
   success: boolean
 }
 
@@ -77,23 +77,29 @@ export async function fetchWeather(lat: number, lon: number): Promise<WeatherDat
     const res = await fetch(url)
     const data = await res.json()
     const cur = data.current ?? {}
-    const rain = parseFloat(cur.rain ?? cur.precipitation ?? '0') || 0
-    const humidity = parseFloat(cur.relative_humidity_2m ?? '50') || 50
-    const temperature = parseFloat(cur.temperature_2m ?? '25') || 25
-    const windSpeed = parseFloat(cur.wind_speed_10m ?? '0') || 0
-    const weatherCode = parseInt(cur.weather_code ?? '0') || 0
-    const feelsLike = parseFloat(cur.apparent_temperature ?? cur.temperature_2m ?? '25') || 25
-    const cloudCover = parseFloat(cur.cloud_cover ?? '0') || 0
+    const rain = cur.rain !== undefined ? parseFloat(cur.rain) : (cur.precipitation !== undefined ? parseFloat(cur.precipitation) : null)
+    const humidity = cur.relative_humidity_2m !== undefined ? parseFloat(cur.relative_humidity_2m) : null
+    const temperature = cur.temperature_2m !== undefined ? parseFloat(cur.temperature_2m) : null
+    const windSpeed = cur.wind_speed_10m !== undefined ? parseFloat(cur.wind_speed_10m) : null
+    const weatherCode = cur.weather_code !== undefined ? parseInt(cur.weather_code) : null
+    const feelsLike = cur.apparent_temperature !== undefined ? parseFloat(cur.apparent_temperature) : (temperature ?? null)
+    const cloudCover = cur.cloud_cover !== undefined ? parseFloat(cur.cloud_cover) : null
     return {
-      rain, humidity, temperature, windSpeed, weatherCode,
-      weatherDesc: getWeatherDesc(weatherCode),
-      feelsLike, cloudCover, success: true,
+      rain: rain !== null && !isNaN(rain) ? rain : null,
+      humidity: humidity !== null && !isNaN(humidity) ? humidity : null,
+      temperature: temperature !== null && !isNaN(temperature) ? temperature : null,
+      windSpeed: windSpeed !== null && !isNaN(windSpeed) ? windSpeed : null,
+      weatherCode: weatherCode !== null && !isNaN(weatherCode) ? weatherCode : null,
+      weatherDesc: weatherCode !== null ? getWeatherDesc(weatherCode) : 'Unknown',
+      feelsLike: feelsLike !== null && !isNaN(feelsLike) ? feelsLike : null,
+      cloudCover: cloudCover !== null && !isNaN(cloudCover) ? cloudCover : null,
+      success: true,
     }
   } catch {
     return {
-      rain: 10.0, humidity: 60.0, temperature: 28.0, windSpeed: 5.0,
-      weatherCode: 63, weatherDesc: 'Moderate rain', feelsLike: 30.0,
-      cloudCover: 75, success: false,
+      rain: null, humidity: null, temperature: null, windSpeed: null,
+      weatherCode: null, weatherDesc: 'Unknown', feelsLike: null,
+      cloudCover: null, success: false,
     }
   }
 }

@@ -4,13 +4,30 @@ import { type UIText } from '../lib/translations'
 
 interface ForecastProps {
   t: UIText
-  riskScore: number
-  rain: number
+  riskScore: number | null
+  rain: number | null
   selectedName: string
 }
 
 export default function Forecast({ t, riskScore, rain, selectedName }: ForecastProps) {
   const [forecastType, setForecastType] = useState<'24h' | '6h'>('24h')
+
+  if (riskScore === null || rain === null) {
+    return (
+      <div className="space-y-5 animate-fade-in">
+        <div className="bg-slate-800/40 rounded-xl p-5 border border-slate-700/50">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="w-5 h-5 text-primary-400" />
+            <h3 className="text-base font-semibold text-slate-200">{t.forecastTitle}</h3>
+          </div>
+          <div className="bg-slate-900/60 rounded-xl p-8 border border-slate-700/30 text-center">
+            <p className="text-sm text-slate-400">Live weather data for {selectedName} is currently unavailable.</p>
+            <p className="text-xs text-slate-500 mt-2">Forecast cannot be generated without actual rainfall and risk data. Please try again when the API is available.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const hours24 = Array.from({ length: 12 }, (_, i) => `+${i * 2 + 2}h`)
   const baseCurve = [

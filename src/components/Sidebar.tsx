@@ -329,6 +329,9 @@ export default function Sidebar({
               <span className="text-xs text-slate-500">{t.weatherCondition}</span>
             </div>
             <p className="text-sm font-bold text-slate-100">{weather.weatherDesc}</p>
+            {!weather.success && (
+              <p className="text-[10px] text-warning-400 mt-0.5">Live API data unavailable</p>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-slate-800/60 rounded-lg p-3">
@@ -336,15 +339,15 @@ export default function Sidebar({
                 <Thermometer className="w-3.5 h-3.5 text-primary-400" />
                 <span className="text-xs text-slate-500">{t.liveTemp}</span>
               </div>
-              <p className="text-lg font-bold text-slate-100">{weather.temperature.toFixed(1)}<span className="text-xs font-normal text-slate-500">°C</span></p>
-              <p className="text-xs text-slate-500 mt-0.5">{t.feelsLike}: {weather.feelsLike.toFixed(1)}°C</p>
+              <p className="text-lg font-bold text-slate-100">{weather.temperature !== null ? `${weather.temperature.toFixed(1)}` : '—'}<span className="text-xs font-normal text-slate-500">°C</span></p>
+              <p className="text-xs text-slate-500 mt-0.5">{t.feelsLike}: {weather.feelsLike !== null ? `${weather.feelsLike.toFixed(1)}°C` : '—'}</p>
             </div>
             <div className="bg-slate-800/60 rounded-lg p-3">
               <div className="flex items-center gap-1.5 mb-1">
                 <CloudRain className="w-3.5 h-3.5 text-primary-400" />
                 <span className="text-xs text-slate-500">{t.liveRainfall}</span>
               </div>
-              <p className="text-lg font-bold text-slate-100">{weather.rain.toFixed(1)} <span className="text-xs font-normal text-slate-500">mm/hr</span></p>
+              <p className="text-lg font-bold text-slate-100">{weather.rain !== null ? `${weather.rain.toFixed(1)}` : '—'} <span className="text-xs font-normal text-slate-500">mm/hr</span></p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -353,14 +356,14 @@ export default function Sidebar({
                 <Droplets className="w-3.5 h-3.5 text-primary-400" />
                 <span className="text-xs text-slate-500">{t.soilHumidity}</span>
               </div>
-              <p className="text-lg font-bold text-slate-100">{weather.humidity.toFixed(0)}<span className="text-xs font-normal text-slate-500">%</span></p>
+              <p className="text-lg font-bold text-slate-100">{weather.humidity !== null ? `${weather.humidity.toFixed(0)}` : '—'}<span className="text-xs font-normal text-slate-500">%</span></p>
             </div>
             <div className="bg-slate-800/60 rounded-lg p-3">
               <div className="flex items-center gap-1.5 mb-1">
                 <Wind className="w-3.5 h-3.5 text-primary-400" />
                 <span className="text-xs text-slate-500">{t.windSpeed}</span>
               </div>
-              <p className="text-lg font-bold text-slate-100">{weather.windSpeed.toFixed(1)} <span className="text-xs font-normal text-slate-500">km/h</span></p>
+              <p className="text-lg font-bold text-slate-100">{weather.windSpeed !== null ? `${weather.windSpeed.toFixed(1)}` : '—'} <span className="text-xs font-normal text-slate-500">km/h</span></p>
             </div>
           </div>
           <div className="bg-slate-800/60 rounded-lg p-3">
@@ -370,9 +373,9 @@ export default function Sidebar({
             </div>
             <div className="flex items-center gap-2">
               <div className="flex-1 bg-slate-700 rounded-full h-2 overflow-hidden">
-                <div className="h-full bg-primary-500 rounded-full transition-all duration-500" style={{ width: `${weather.cloudCover}%` }} />
+                <div className="h-full bg-primary-500 rounded-full transition-all duration-500" style={{ width: `${weather.cloudCover ?? 0}%` }} />
               </div>
-              <span className="text-sm font-bold text-slate-100">{weather.cloudCover.toFixed(0)}%</span>
+              <span className="text-sm font-bold text-slate-100">{weather.cloudCover !== null ? `${weather.cloudCover.toFixed(0)}%` : '—'}</span>
             </div>
           </div>
         </div>

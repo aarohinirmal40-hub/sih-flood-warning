@@ -11,10 +11,10 @@ interface DashboardProps {
   selectedName: string
   lat: number
   lon: number
-  weather: { rain: number; humidity: number; temperature: number; windSpeed: number; weatherCode: number; weatherDesc: string; feelsLike: number; cloudCover: number; success: boolean }
-  riverLevel: number
+  weather: { rain: number | null; humidity: number | null; temperature: number | null; windSpeed: number | null; weatherCode: number | null; weatherDesc: string; feelsLike: number | null; cloudCover: number | null; success: boolean }
+  riverLevel: number | null
   dangerMark: number
-  riskScore: number
+  riskScore: number | null
   alert: AlertInfo
   broadcastLog: string[]
 }
@@ -48,7 +48,7 @@ export default function Dashboard({
     [lat + 0.005, lon + 0.005],
   ]
 
-  const sitRep = generateSitRep(selectedName, riskScore, alert.title, weather.rain, riverLevel, dangerMark, weather.humidity, alert.actionMsg)
+  const sitRep = generateSitRep(selectedName, riskScore, alert.title, weather.rain ?? 0, riverLevel ?? 0, dangerMark, weather.humidity ?? 0, alert.actionMsg)
 
   const downloadSitRep = () => {
     const blob = new Blob([sitRep], { type: 'text/plain' })
@@ -78,24 +78,24 @@ export default function Dashboard({
             <Thermometer className="w-4 h-4 text-primary-400" />
             <span className="text-xs text-slate-400">{t.liveTemp}</span>
           </div>
-          <p className="text-2xl font-bold text-slate-100">{weather.temperature.toFixed(1)}<span className="text-sm font-normal text-slate-500">°C</span></p>
-          <p className="text-xs text-slate-500 mt-0.5">{t.feelsLike}: {weather.feelsLike.toFixed(1)}°C</p>
+          <p className="text-2xl font-bold text-slate-100">{weather.temperature !== null ? weather.temperature.toFixed(1) : '—'}<span className="text-sm font-normal text-slate-500">°C</span></p>
+          <p className="text-xs text-slate-500 mt-0.5">{t.feelsLike}: {weather.feelsLike !== null ? `${weather.feelsLike.toFixed(1)}°C` : '—'}</p>
         </div>
         <div className="bg-slate-800/60 backdrop-blur rounded-xl p-4 border border-slate-700/50">
           <div className="flex items-center gap-2 mb-1">
             <CloudRain className="w-4 h-4 text-primary-400" />
             <span className="text-xs text-slate-400">{t.liveRain}</span>
           </div>
-          <p className="text-2xl font-bold text-slate-100">{weather.rain.toFixed(1)} <span className="text-sm font-normal text-slate-500">mm/hr</span></p>
+          <p className="text-2xl font-bold text-slate-100">{weather.rain !== null ? weather.rain.toFixed(1) : '—'} <span className="text-sm font-normal text-slate-500">mm/hr</span></p>
         </div>
         <div className="bg-slate-800/60 backdrop-blur rounded-xl p-4 border border-slate-700/50">
           <div className="flex items-center gap-2 mb-1">
             <Waves className="w-4 h-4 text-primary-400" />
             <span className="text-xs text-slate-400">{t.waterElev}</span>
           </div>
-          <p className="text-2xl font-bold text-slate-100">{riverLevel} <span className="text-sm font-normal text-slate-500">m</span></p>
-          <p className={`text-xs mt-0.5 ${riverLevel - dangerMark > 0 ? 'text-danger-400' : 'text-success-400'}`}>
-            {(riverLevel - dangerMark).toFixed(1)}m vs Danger
+          <p className="text-2xl font-bold text-slate-100">{riverLevel !== null ? riverLevel : '—'} <span className="text-sm font-normal text-slate-500">m</span></p>
+          <p className={`text-xs mt-0.5 ${riverLevel !== null && riverLevel - dangerMark > 0 ? 'text-danger-400' : 'text-success-400'}`}>
+            {riverLevel !== null ? `${(riverLevel - dangerMark).toFixed(1)}m vs Danger` : '—'}
           </p>
         </div>
         <div className="bg-slate-800/60 backdrop-blur rounded-xl p-4 border border-slate-700/50">
@@ -103,7 +103,7 @@ export default function Dashboard({
             <ShieldAlert className="w-4 h-4 text-danger-400" />
             <span className="text-xs text-slate-400">{t.riskIndex}</span>
           </div>
-          <p className="text-2xl font-bold text-slate-100">{riskScore.toFixed(0)} <span className="text-sm font-normal text-slate-500">/ 100</span></p>
+          <p className="text-2xl font-bold text-slate-100">{riskScore !== null ? riskScore.toFixed(0) : '—'} <span className="text-sm font-normal text-slate-500">/ 100</span></p>
         </div>
       </div>
 
@@ -114,20 +114,23 @@ export default function Dashboard({
             <span className="text-xs text-slate-400">{t.weatherCondition}</span>
           </div>
           <p className="text-lg font-bold text-slate-100">{weather.weatherDesc}</p>
+          {!weather.success && (
+            <p className="text-[10px] text-warning-400 mt-0.5">Live API data unavailable</p>
+          )}
         </div>
         <div className="bg-slate-800/60 backdrop-blur rounded-xl p-4 border border-slate-700/50">
           <div className="flex items-center gap-2 mb-1">
             <Droplets className="w-4 h-4 text-primary-400" />
             <span className="text-xs text-slate-400">{t.soilHumidity}</span>
           </div>
-          <p className="text-2xl font-bold text-slate-100">{weather.humidity.toFixed(0)}<span className="text-sm font-normal text-slate-500">%</span></p>
+          <p className="text-2xl font-bold text-slate-100">{weather.humidity !== null ? weather.humidity.toFixed(0) : '—'}<span className="text-sm font-normal text-slate-500">%</span></p>
         </div>
         <div className="bg-slate-800/60 backdrop-blur rounded-xl p-4 border border-slate-700/50">
           <div className="flex items-center gap-2 mb-1">
             <Wind className="w-4 h-4 text-primary-400" />
             <span className="text-xs text-slate-400">{t.windSpeed}</span>
           </div>
-          <p className="text-2xl font-bold text-slate-100">{weather.windSpeed.toFixed(1)} <span className="text-sm font-normal text-slate-500">km/h</span></p>
+          <p className="text-2xl font-bold text-slate-100">{weather.windSpeed !== null ? weather.windSpeed.toFixed(1) : '—'} <span className="text-sm font-normal text-slate-500">km/h</span></p>
         </div>
         <div className="bg-slate-800/60 backdrop-blur rounded-xl p-4 border border-slate-700/50">
           <div className="flex items-center gap-2 mb-1">
@@ -139,7 +142,7 @@ export default function Dashboard({
         </div>
       </div>
 
-      {riskScore >= 50 && (
+      {riskScore !== null && riskScore >= 50 && (
         <div className="space-y-3">
           <div className="bg-danger-900/20 border border-danger-700/40 rounded-xl p-4 flex items-start gap-3">
             <Volume2 className="w-5 h-5 text-danger-400 flex-shrink-0 mt-0.5 animate-pulse" />
@@ -184,12 +187,12 @@ export default function Dashboard({
             </div>
             <div className="flex items-center gap-2 mb-1">
               <span className="text-xs text-slate-400">Risk Level</span>
-              <span className="text-xs font-bold text-slate-200 ml-auto">{Math.min(riskScore, 100).toFixed(0)}%</span>
+              <span className="text-xs font-bold text-slate-200 ml-auto">{riskScore !== null ? `${Math.min(riskScore, 100).toFixed(0)}%` : 'N/A'}</span>
             </div>
             <div className="w-full bg-slate-700 rounded-full h-2.5 overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-700"
-                style={{ width: `${Math.min(riskScore, 100)}%`, backgroundColor: alert.bgColor }}
+                style={{ width: `${riskScore !== null ? Math.min(riskScore, 100) : 0}%`, backgroundColor: alert.bgColor }}
               />
             </div>
           </div>
