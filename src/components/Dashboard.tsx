@@ -1,6 +1,6 @@
 import { MapContainer, TileLayer, CircleMarker, Marker, Polyline, Popup } from 'react-leaflet'
 import L from 'leaflet'
-import { AlertTriangle, Download, Home, Phone, CloudRain, Waves, ShieldAlert, Volume2, MessageSquare, Thermometer, Wind, Cloud, Eye, Droplets } from 'lucide-react'
+import { AlertTriangle, Download, Home, Phone, CloudRain, Waves, ShieldAlert, Volume2, MessageSquare, Thermometer, Wind, Cloud, Eye, Droplets, Clock, Database, Info, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { type UIText } from '../lib/translations'
 import { type AlertInfo } from '../lib/risk'
@@ -24,6 +24,81 @@ const reliefCamps = [
   { name: 'Panchayat Bhawan', distance: '2.5 km (High Ground)', status: 'OPEN' },
   { name: 'Community Centre', distance: '3.8 km (Main Highway)', status: 'STANDBY' },
 ]
+
+function DataSourceBadge({ weather, t }: { weather: DashboardProps['weather']; t: UIText }) {
+  if (!weather.success) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-700 text-slate-400">
+        <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+        {t.dataSourceUnavailable}
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-success-900/40 text-success-400">
+      <span className="w-1.5 h-1.5 rounded-full bg-success-400 animate-pulse" />
+      {t.dataSourceLive}
+    </span>
+  )
+}
+
+function RiskExplanation({ riskScore, weather, riverLevel, dangerMark, t }: {
+  riskScore: number | null
+  weather: DashboardProps['weather']
+  riverLevel: number | null
+  dangerMark: number
+  t: UIText
+}) {
+  if (riskScore === null) {
+    return (
+      <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50">
+        <div className="flex items-center gap-2 mb-2">
+          <Info className="w-4 h-4 text-slate-400" />
+          <h4 className="text-sm font-semibold text-slate-200">{t.riskWhy}</h4>
+        </div>
+        <p className="text-sm text-slate-400">
+          Live weather data is currently unavailable for this location. The risk score cannot be calculated without actual rainfall, humidity, and river level data. Please try again when the API is available.
+        </p>
+      </div>
+    )
+  }
+
+  const factors: string[] = []
+  if (weather.rain !== null) {
+    if (weather.rain === 0) factors.push('No live rainfall detected (0 mm/hr)')
+    else if (weather.rain <= 5) factors.push(`Light rainfall (${weather.rain.toFixed(1)} mm/hr) — low contribution`)
+    else if (weather.rain <= 15) factors.push(`Moderate rainfall (${weather.rain.toFixed(1)} mm/hr) — significant contribution`)
+    else factors.push(`Heavy rainfall (${weather.rain.toFixed(1)} mm/hr) — major contribution`)
+  }
+  if (riverLevel !== null && dangerMark > 0) {
+    const ratio = riverLevel / dangerMark
+    if (ratio < 0.7) factors.push(`River level at ${(ratio * 100).toFixed(0)}% of danger mark — within safe range`)
+    else if (ratio < 0.95) factors.push(`River level at ${(ratio * 100).toFixed(0)}% of danger mark — approaching danger`)
+    else factors.push(`River level at ${(ratio * 100).toFixed(0)}% of danger mark — at or above danger level`)
+  }
+  if (weather.humidity !== null) {
+    if (weather.humidity > 85) factors.push(`Soil humidity very high (${weather.humidity.toFixed(0)}%) — ground saturated`)
+    else if (weather.humidity > 70) factors.push(`Soil humidity elevated (${weather.humidity.toFixed(0)}%)`)
+    else factors.push(`Soil humidity normal (${weather.humidity.toFixed(0)}%)`)
+  }
+
+  return (
+    <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50">
+      <div className="flex items-center gap-2 mb-3">
+        <Info className="w-4 h-4 text-primary-400" />
+        <h4 className="text-sm font-semibold text-slate-200">{t.riskWhy}</h4>
+      </div>
+      <ul className="space-y-1.5">
+        {factors.map((f, i) => (
+          <li key={i} className="text-sm text-slate-400 flex items-start gap-2">
+            <ChevronRight className="w-3.5 h-3.5 text-slate-600 flex-shrink-0 mt-0.5" />
+            {f}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
 
 export default function Dashboard({
   t, selectedName, lat, lon, weather, riverLevel, dangerMark, riskScore, alert, broadcastLog,
@@ -62,8 +137,11 @@ export default function Dashboard({
 
   const homeIcon = L.divIcon({ html: '<i class="fa fa-home" style="color:#388E3C;font-size:18px"></i>', className: '', iconSize: [24, 24] })
 
+  const now = new Date().toLocaleString()
+
   return (
     <div className="space-y-5 animate-fade-in">
+      {/* Alert banner */}
       <div
         className="rounded-xl px-5 py-4 text-center font-bold text-lg flex items-center justify-center gap-2 shadow-lg"
         style={{ backgroundColor: alert.bgColor, color: alert.textColor }}
@@ -72,6 +150,20 @@ export default function Dashboard({
         {alert.title}
       </div>
 
+      {/* Data source + last updated */}
+      <div className="flex flex-wrap items-center gap-3 text-xs">
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Clock className="w-3.5 h-3.5" />
+          <span>{t.lastUpdated}: {now}</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Database className="w-3.5 h-3.5" />
+          <span>{t.dataSource}:</span>
+          <DataSourceBadge weather={weather} t={t} />
+        </div>
+      </div>
+
+      {/* Weather cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="bg-slate-800/60 backdrop-blur rounded-xl p-4 border border-slate-700/50">
           <div className="flex items-center gap-2 mb-1">
@@ -115,7 +207,7 @@ export default function Dashboard({
           </div>
           <p className="text-lg font-bold text-slate-100">{weather.weatherDesc}</p>
           {!weather.success && (
-            <p className="text-[10px] text-warning-400 mt-0.5">Live API data unavailable</p>
+            <p className="text-[10px] text-warning-400 mt-0.5">{t.dataSourceUnavailable}</p>
           )}
         </div>
         <div className="bg-slate-800/60 backdrop-blur rounded-xl p-4 border border-slate-700/50">
@@ -142,6 +234,28 @@ export default function Dashboard({
         </div>
       </div>
 
+      {/* Risk explanation */}
+      <RiskExplanation riskScore={riskScore} weather={weather} riverLevel={riverLevel} dangerMark={dangerMark} t={t} />
+
+      {/* What should I do now */}
+      <div className="bg-slate-800/40 rounded-xl p-5 border border-slate-700/50">
+        <h3 className="text-base font-semibold text-slate-200 mb-3">{t.whatToDoNow}</h3>
+        <div className="bg-primary-900/20 border border-primary-700/30 rounded-lg p-3 mb-4">
+          <p className="text-sm text-slate-300">{alert.actionMsg}</p>
+        </div>
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-xs text-slate-400">{t.riskIndex}</span>
+          <span className="text-xs font-bold text-slate-200 ml-auto">{riskScore !== null ? `${Math.min(riskScore, 100).toFixed(0)}%` : 'N/A'}</span>
+        </div>
+        <div className="w-full bg-slate-700 rounded-full h-2.5 overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-700"
+            style={{ width: `${riskScore !== null ? Math.min(riskScore, 100) : 0}%`, backgroundColor: alert.bgColor }}
+          />
+        </div>
+      </div>
+
+      {/* Emergency siren */}
       {riskScore !== null && riskScore >= 50 && (
         <div className="space-y-3">
           <div className="bg-danger-900/20 border border-danger-700/40 rounded-xl p-4 flex items-start gap-3">
@@ -156,6 +270,7 @@ export default function Dashboard({
         </div>
       )}
 
+      {/* Broadcast logs */}
       {broadcastLog.length > 0 && (
         <div className="bg-slate-800/40 rounded-xl border border-slate-700/50">
           <button
@@ -180,23 +295,6 @@ export default function Dashboard({
 
       <div className="grid lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 space-y-4">
-          <div className="bg-slate-800/40 rounded-xl p-5 border border-slate-700/50">
-            <h3 className="text-base font-semibold text-slate-200 mb-3">{t.advisory} — {selectedName}</h3>
-            <div className="bg-primary-900/20 border border-primary-700/30 rounded-lg p-3 mb-4">
-              <p className="text-sm text-slate-300">{alert.actionMsg}</p>
-            </div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs text-slate-400">Risk Level</span>
-              <span className="text-xs font-bold text-slate-200 ml-auto">{riskScore !== null ? `${Math.min(riskScore, 100).toFixed(0)}%` : 'N/A'}</span>
-            </div>
-            <div className="w-full bg-slate-700 rounded-full h-2.5 overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-700"
-                style={{ width: `${riskScore !== null ? Math.min(riskScore, 100) : 0}%`, backgroundColor: alert.bgColor }}
-              />
-            </div>
-          </div>
-
           <div className="bg-slate-800/40 rounded-xl p-5 border border-slate-700/50">
             <h3 className="text-base font-semibold text-slate-200 mb-3">{t.sitrep}</h3>
             <button

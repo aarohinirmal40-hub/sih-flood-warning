@@ -1,22 +1,48 @@
 import { useState, useMemo, useEffect } from 'react'
-import { AlertTriangle, TrendingUp, Bot, Camera, Radio, Satellite, ShieldCheck } from 'lucide-react'
+import {
+  AlertTriangle, Bell, Route, Home, Users, Siren, Heart, ClipboardCheck,
+  Bot, TrendingUp, WifiOff, Satellite, ShieldCheck,
+} from 'lucide-react'
 import Sidebar from './components/Sidebar'
 import Dashboard from './components/Dashboard'
-import Forecast from './components/Forecast'
+import SmartAlerts from './components/SmartAlerts'
+import SafeRouting from './components/SafeRouting'
+import Shelters from './components/Shelters'
+import CommunityReports from './components/CommunityReports'
+import EmergencyCenter from './components/EmergencyCenter'
+import FamilySafety from './components/FamilySafety'
+import FloodPreparedness from './components/FloodPreparedness'
 import Chatbot from './components/Chatbot'
-import SosReport from './components/SosReport'
+import Forecast from './components/Forecast'
 import Offline from './components/Offline'
 import SatelliteView from './components/SatelliteView'
 import { type LanguageKey, getUIText, translateAlert } from './lib/translations'
 import { defaultLocation, type WeatherData } from './lib/locations'
-import { calculateRisk, getAlertInfo } from './lib/risk'
+import { calculateRisk, getAlertInfo, type AlertInfo } from './lib/risk'
 
 const nullWeather: WeatherData = {
   rain: null, humidity: null, temperature: null, windSpeed: null,
   weatherCode: null, weatherDesc: 'Unknown', feelsLike: null, cloudCover: null, success: false,
 }
 
-const tabIcons = [AlertTriangle, TrendingUp, Bot, Camera, Radio, Satellite]
+const tabIcons = [
+  AlertTriangle, Bell, Route, Home, Users, Siren, Heart, ClipboardCheck,
+  Bot, TrendingUp, WifiOff, Satellite,
+]
+
+export interface AppContext {
+  t: ReturnType<typeof getUIText>
+  langKey: LanguageKey
+  selectedName: string
+  lat: number
+  lon: number
+  dangerMark: number
+  weather: WeatherData
+  riverLevel: number | null
+  riskScore: number | null
+  alert: AlertInfo
+  broadcastLog: string[]
+}
 
 export default function App() {
   const [langKey, setLangKey] = useState<LanguageKey>('en')
@@ -62,6 +88,10 @@ export default function App() {
 
   const tabs = t.tabs
 
+  const ctx: AppContext = {
+    t, langKey, selectedName, lat, lon, dangerMark, weather, riverLevel, riskScore, alert, broadcastLog,
+  }
+
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-slate-950">
       <Sidebar
@@ -80,7 +110,7 @@ export default function App() {
         setWeather={setWeather}
       />
 
-      <main className="flex-1 overflow-y-auto p-5 lg:p-8">
+      <main className="flex-1 overflow-y-auto p-5 lg:p-8 pb-20 lg:pb-8">
         <header className="mb-6">
           <div className="flex items-center gap-3 mb-1">
             <ShieldCheck className="w-8 h-8 text-primary-400 flex-shrink-0" />
@@ -120,27 +150,52 @@ export default function App() {
               broadcastLog={broadcastLog}
             />
           )}
-          {activeTab === 1 && (
-            <Forecast t={t} riskScore={riskScore} rain={weather.rain} selectedName={selectedName} />
-          )}
-          {activeTab === 2 && (
+          {activeTab === 1 && <SmartAlerts ctx={ctx} />}
+          {activeTab === 2 && <SafeRouting ctx={ctx} />}
+          {activeTab === 3 && <Shelters ctx={ctx} />}
+          {activeTab === 4 && <CommunityReports t={t} selectedName={selectedName} lat={lat} lon={lon} />}
+          {activeTab === 5 && <EmergencyCenter ctx={ctx} />}
+          {activeTab === 6 && <FamilySafety t={t} />}
+          {activeTab === 7 && <FloodPreparedness t={t} />}
+          {activeTab === 8 && (
             <Chatbot t={t} selectedName={selectedName} riskScore={riskScore} actionMsg={alert.actionMsg} rain={weather.rain} riverLevel={riverLevel} />
           )}
-          {activeTab === 3 && (
-            <SosReport t={t} selectedName={selectedName} />
+          {activeTab === 9 && (
+            <Forecast t={t} riskScore={riskScore} rain={weather.rain} selectedName={selectedName} />
           )}
-          {activeTab === 4 && (
-            <Offline t={t} />
-          )}
-          {activeTab === 5 && (
-            <SatelliteView t={t} lat={lat} lon={lon} selectedName={selectedName} />
-          )}
+          {activeTab === 10 && <Offline t={t} />}
+          {activeTab === 11 && <SatelliteView t={t} lat={lat} lon={lon} selectedName={selectedName} />}
         </div>
 
         <footer className="mt-8 pt-4 border-t border-slate-700/50 text-center text-xs text-slate-600">
           NDMA Flash Flood Portal — SIH 2026 (SIH26192) | Aapda Seva
         </footer>
       </main>
+
+      {/* Mobile sticky SOS bar */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-md border-t border-slate-700/50 px-4 py-3 flex items-center gap-3">
+        <button
+          onClick={() => setActiveTab(5)}
+          className="flex-1 flex items-center justify-center gap-2 bg-danger-600 hover:bg-danger-700 text-white rounded-lg px-4 py-2.5 text-sm font-bold transition-all animate-pulse-ring"
+        >
+          <Siren className="w-5 h-5" />
+          {t.sosBtn}
+        </button>
+        <button
+          onClick={() => setActiveTab(2)}
+          className="flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg px-4 py-2.5 text-sm font-medium transition-all"
+        >
+          <Route className="w-5 h-5" />
+          {t.findSafeRoute}
+        </button>
+        <button
+          onClick={() => setActiveTab(3)}
+          className="flex items-center justify-center gap-2 bg-success-600 hover:bg-success-700 text-white rounded-lg px-4 py-2.5 text-sm font-medium transition-all"
+        >
+          <Home className="w-5 h-5" />
+          {t.findShelter}
+        </button>
+      </div>
     </div>
   )
 }
