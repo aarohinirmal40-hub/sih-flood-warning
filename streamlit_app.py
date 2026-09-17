@@ -144,7 +144,7 @@ def data_badge(weather: WeatherData | None):
 def get_river_level(weather: WeatherData | None, danger_mark: float) -> float | None:
     if weather is None or weather.rain is None:
         return None
-    return round(danger_mark + weather.rain * 0.05, 2)
+    return round((danger_mark * 0.5) + (weather.rain * 0.05), 2)
 
 
 def get_risk_score(weather: WeatherData | None, river_level: float | None, danger_mark: float) -> float | None:
