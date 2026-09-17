@@ -12,7 +12,7 @@ from datetime import datetime
 import streamlit as st
 
 # Ensure the package directory is importable
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirmame(os.path.abspath(__file__)),"streamlit_app"))
 
 from risk import calculate_risk, get_alert_info, generate_sitrep, AlertInfo  # noqa: E402
 from locations import (  # noqa: E402
